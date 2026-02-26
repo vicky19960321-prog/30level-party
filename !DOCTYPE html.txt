@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>《三十未登出》系統載入中...</title>
+<style>
+       /* 全域樣式：復古與蒸氣波混合 */
+       :root {
+           --win-gray: #c0c0c0;
+           --win-blue: #000080;
+           --win-light-blue: #1084d0;
+           --neon-pink: #ff00ff;
+           --neon-cyan: #00ffff;
+       }
+       body {
+           margin: 0;
+           padding: 0;
+           background-color: #1a0033;
+           font-family: 'BiauKai', 'DFKai-SB', '標楷體', '微軟正黑體', sans-serif;
+           color: #333;
+           cursor: crosshair;
+           overflow-x: hidden;
+           padding-bottom: 60px;
+       }
+       /* 掃描線特效 (CRT Effect) */
+       .crt::before {
+           content: " ";
+           display: block;
+           position: fixed;
+           top: 0; left: 0; bottom: 0; right: 0;
+           background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%),
+                       linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+           z-index: 9999;
+           background-size: 100% 3px, 3px 100%;
+           pointer-events: none;
+       }
+       /* 網格背景 */
+       .grid-bg {
+           min-height: 100vh;
+           background-color: #2b005e;
+           background-image:
+               linear-gradient(transparent 95%, rgba(255, 0, 255, 0.3) 100%),
+               linear-gradient(90deg, transparent 95%, rgba(255, 0, 255, 0.3) 100%);
+           background-size: 40px 40px;
+           padding: 40px 20px 120px 20px;
+           display: flex;
+           flex-direction: column;
+           align-items: center;
+       }
+       /* 標題動畫 */
+       h1.neon-title {
+           color: #fff;
+           font-size: clamp(2.5rem, 10vw, 4rem);
+           text-align: center;
+           margin: 0;
+           text-shadow: 0 0 10px #fff, 0 0 20px var(--neon-pink), 0 0 40px var(--neon-pink);
+           font-family: '微軟正黑體', sans-serif;
+           font-weight: 900;
+           letter-spacing: 5px;
+           animation: flicker 2s infinite alternate;
+       }
+       @keyframes flicker {
+           0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% { text-shadow: 0 0 10px #fff, 0 0 20px var(--neon-pink); }
+           20%, 22%, 24%, 55% { text-shadow: none; }
+       }
+       .subtitle {
+           color: var(--neon-cyan);
+           font-size: 1.2rem;
+           margin-bottom: 30px;
+           text-shadow: 2px 2px 4px #000;
+           font-weight: bold;
+           background: rgba(0,0,0,0.5);
+           padding: 10px 20px;
+           border: 1px dashed var(--neon-cyan);
+           text-align: center;
+           line-height: 1.8;
+       }
+       /* 讓超連結沒有底線、顏色跟副標題一樣 */
+       .subtitle a {
+           color: var(--neon-cyan);
+           text-decoration: none;
+           cursor: pointer;
+       }
+       .subtitle a:hover {
+           color: #fff;
+           text-shadow: 0 0 10px var(--neon-cyan);
+       }
+       /* Windows 視窗樣式 */
+       .window {
+           background-color: var(--win-gray);
+           width: 100%;
+           max-width: 600px;
+           border-top: 2px solid #fff;
+           border-left: 2px solid #fff;
+           border-bottom: 2px solid #444;
+           border-right: 2px solid #444;
+           margin-bottom: 30px;
+           box-shadow: 10px 10px 0px rgba(0,0,0,0.4);
+           position: relative;
+           transition: transform 0.2s;
+       }
+       .window:active { transform: scale(0.99); }
+       .title-bar {
+           background: linear-gradient(90deg, var(--win-blue), var(--win-light-blue));
+           color: white;
+           padding: 5px 10px;
+           font-size: 0.9rem;
+           display: flex;
+           justify-content: space-between;
+           align-items: center;
+           font-weight: bold;
+           user-select: none;
+       }
+       .close-btn {
+           background-color: var(--win-gray);
+           color: black;
+           border-top: 1px solid #fff;
+           border-left: 1px solid #fff;
+           border-bottom: 2px solid #000;
+           border-right: 2px solid #000;
+           padding: 1px 6px;
+           cursor: pointer;
+           font-size: 0.8rem;
+       }
+       .close-btn:active { border: 1px inset #000; }
+       .content { padding: 20px; line-height: 1.6; }
+       /* 遊戲與任務細節 */
+       .task-item { border-bottom: 1px dashed #888; padding: 10px 0; }
+       .task-time { font-size: 1.2rem; font-weight: bold; color: var(--win-blue); }
+       .task-hint { color: #555; font-size: 0.9rem; padding-left: 5px; }
+       /* 按鈕互動 */
+       .btn-group { display: flex; justify-content: center; gap: 15px; margin-top: 15px; }
+       .win-btn {
+           padding: 8px 16px;
+           font-weight: bold;
+           border-top: 2px solid #fff;
+           border-left: 2px solid #fff;
+           border-bottom: 2px solid #000;
+           border-right: 2px solid #000;
+           background: var(--win-gray);
+           cursor: pointer;
+       }
+       .win-btn:active { border: 2px inset #000; }
+       .btn-highlight { background: #ffd700; }
+       /* 貼紙 */
+       .sticker {
+           position: absolute;
+           font-size: 3.5rem;
+           z-index: 10;
+           filter: drop-shadow(4px 4px 0 white);
+           pointer-events: none;
+       }
+       /* 底部工作列 */
+       .taskbar {
+           position: fixed;
+           bottom: 0; left: 0; right: 0;
+           height: 40px;
+           background: var(--win-gray);
+           border-top: 2px solid #fff;
+           display: flex;
+           align-items: center;
+           padding: 0 5px;
+           z-index: 10000;
+       }
+       .start-btn {
+           font-weight: bold;
+           padding: 4px 12px;
+           border-top: 2px solid #fff;
+           border-left: 2px solid #fff;
+           border-bottom: 2px solid #000;
+           border-right: 2px solid #000;
+           display: flex; align-items: center; gap: 5px;
+           cursor: pointer;
+           background: var(--win-gray);
+       }
+       .start-btn:active { border: 2px inset #000; }
+       .clock {
+           margin-left: auto;
+           border-top: 2px solid #888;
+           border-left: 2px solid #888;
+           border-bottom: 2px solid #fff;
+           border-right: 2px solid #fff;
+           padding: 2px 10px;
+           background: var(--win-gray);
+           font-size: 0.9rem;
+       }
+       ul { list-style: none; padding-left: 10px; }
+       li::before { content: "► "; color: var(--win-blue); }
+       /* 手機適應 */
+       @media (max-width: 600px) {
+           .window { width: 95%; }
+           .sticker { font-size: 2.5rem; }
+       }
+</style>
+</head>
+<body class="crt">
+<div class="grid-bg">
+<h1 class="neon-title">三十未登出</h1>
+<div class="subtitle">
+           ⏰ 系統版本：2026.03.28 15:00<br>
+<a href="https://www.google.com/maps/search/?api=1&query=后里柚子民宿" target="_blank">📍 伺服器位置：后里柚子民宿 (點擊開啟導航)</a>
+</div>
+<div class="window" id="alert-win">
+<span class="sticker" style="top:-30px; left:-20px; transform: rotate(-15deg);">💾</span>
+<div class="title-bar">
+<span>System_Notice.exe</span>
+<div class="close-btn" onclick="closeWindow('alert-win')">X</div>
+</div>
+<div class="content">
+<p><strong>警告：</strong>偵測到您即將進入「三十歲」高階地圖。目前系統資源充足，建議立即載入「火鍋」與「酒精」補丁。</p>
+<div class="btn-group">
+<button class="win-btn btn-highlight" onclick="alert('補丁下載中... 預計於 17:00 完工！')">立即安裝</button>
+<button class="win-btn" onclick="closeWindow('alert-win')">稍後提醒</button>
+</div>
+</div>
+</div>
+<div class="window" id="task-win">
+<span class="sticker" style="top:-35px; right:-15px; transform: rotate(15deg);">🌈</span>
+<div class="title-bar">
+<span>Event_Scheduler.vbs</span>
+<div class="close-btn" onclick="closeWindow('task-win')">X</div>
+</div>
+<div class="content">
+<div class="task-item">
+<div class="task-time">15:00 帳號登入</div>
+<div class="task-hint">> 后里柚子民宿報到，確認裝備（行李）</div>
+</div>
+<div class="task-item">
+<div class="task-time">17:00 核心運行</div>
+<div class="task-hint">> 火鍋副本啟動，食材全量載入</div>
+</div>
+<div class="task-item">
+<div class="task-time">19:00 系統壓力測試</div>
+<div class="task-hint">> 懷舊音樂搶答、台英雙語大賽、命運選色</div>
+</div>
+<div class="task-item" style="border:none;">
+<div class="task-time">22:00 靜音模式</div>
+<div class="task-hint">> 深度對話空間，系統進入穩定低功耗運作</div>
+</div>
+</div>
+</div>
+<div class="window" id="game-win">
+<span class="sticker" style="bottom:-25px; right:10px; transform: rotate(-10deg);">🎮</span>
+<div class="title-bar">
+<span>Game_Rules.hlp</span>
+<div class="close-btn" onclick="closeWindow('game-win')">X</div>
+</div>
+<div class="content">
+<p><strong>【 遊戲一：歌詞還在線嗎 】</strong></p>
+<ul>
+<li>播放 5–8 秒歌曲，聽出答案者需舉手／按鈴搶答。</li>
+<li>必須完整答出「歌名+歌手」才算得分。</li>
+<li>答對 +1 分，答錯 -1 分（避免亂猜）。</li>
+</ul>
+<hr>
+<p><strong>【 遊戲二：腦袋轉得動嗎 】</strong></p>
+<ul>
+<li>限時 60 秒，僅限英文或台語解釋成語。</li>
+<li>不可說中文、不可比手畫腳或講到成語中的字。</li>
+<li>被抓到違規，全場可大喊「抓到！」增加趣味感。</li>
+</ul>
+<hr>
+<p><strong>【 遊戲三：選色即命運 (彩色零食) 】</strong></p>
+<ul>
+<li>顏色決定你的今晚職責。</li>
+<li>是「洗碗工」還是「調酒大師」？選了就知道。</li>
+</ul>
+</div>
+</div>
+<button class="win-btn" onclick="resetSystem()" style="margin-top: 20px;">[ 重啟所有視窗 ]</button>
+<p style="color: white; margin-top: 20px; font-style: italic; opacity: 0.8;">※ 系統建議：請在 Wifi 穩定的環境下進行多人連線</p>
+</div>
+<div class="taskbar">
+<div class="start-btn" onclick="resetSystem()">
+<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/Windows_logo_-_2012.svg/1024px-Windows_logo_-_2012.svg.png" width="15" alt="">
+           開始
+</div>
+<div style="margin-left: 10px; font-size: 0.8rem; border-left: 1px solid #888; padding-left: 10px;">
+           三十未登出_System
+</div>
+<div class="clock" id="live-clock">15:00:00</div>
+</div>
+<script>
+       // 關閉視窗功能
+       function closeWindow(id) {
+           document.getElementById(id).style.display = 'none';
+       }
+       // 重啟系統（恢復視窗）
+       function resetSystem() {
+           document.getElementById('alert-win').style.display = 'block';
+           document.getElementById('task-win').style.display = 'block';
+           document.getElementById('game-win').style.display = 'block';
+       }
+       // 即時時鐘
+       function updateClock() {
+           const now = new Date();
+           const h = String(now.getHours()).padStart(2, '0');
+           const m = String(now.getMinutes()).padStart(2, '0');
+           const s = String(now.getSeconds()).padStart(2, '0');
+           document.getElementById('live-clock').innerText = `${h}:${m}:${s}`;
+       }
+       setInterval(updateClock, 1000);
+       updateClock();
+</script>
+</body>
+</html>
